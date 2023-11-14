@@ -2,6 +2,7 @@ from typing import List
 import numpy as np
 import random
 import torch
+import pandas as pd
 import os
 
 INSTR_NAIVE = """
@@ -33,3 +34,19 @@ def format_prompt_finetuning(query: str, passages: List[str], instr: str = INSTR
         prompt += f" {i+1},"
     prompt = prompt[:-1]
     return prompt
+
+def remove_ranking(prompt_txt: str) -> List[str]:
+    ind = prompt_txt.index(RESPONSE_TEMPLATE)
+    prompt = prompt_txt[:ind + len(RESPONSE_TEMPLATE)]
+    ranking = prompt_txt[ind + len(RESPONSE_TEMPLATE):].strip()
+    return prompt, ranking
+
+def process_ranking(ranking: str) -> List[int]:
+    return [int(x) for x in ranking.split(',')]
+
+def get_labels(df: pd.DataFrame) -> List[List[int]]:
+    y_true = []
+    for i, row in df.iterrows():
+        _, ranking = remove_ranking(row.text)
+        y_true.append(process_ranking(ranking))
+    return y_true

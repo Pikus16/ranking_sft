@@ -1,6 +1,8 @@
 from typing import Dict, List, Optional
 import json
 import pandas as pd
+import numpy as np
+from sklearn.metrics import ndcg_score
 
 QUERY_STR = 'Query: '
 
@@ -61,3 +63,21 @@ def read_gpt_ranking(filepath: str) -> pd.DataFrame:
         except:
             pass
     return pd.DataFrame(outputs)
+
+def get_perc_first_correct(y_true: List[List[int]], y_pred: List[List[int]]):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    assert y_true.shape[1] == 5
+    assert y_pred.shape[1] == 5
+    assert len(y_true.shape) == 2
+    assert len(y_pred.shape) == 2
+    return np.mean(y_pred[:,0] == y_true[:,0])
+
+def calc_ncdg(rankings, y_true) -> float:
+    mod_rankings = []
+    for yt in y_true:
+        weights = [0] * 5
+        for j,i in enumerate(yt):
+            weights[i-1] = 5-j
+        mod_rankings.append(weights)
+    return ndcg_score(mod_rankings, rankings)
