@@ -3,6 +3,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 import pandas as pd
 from tqdm import tqdm
+import sys
+sys.path.append('../../sft')
+sys.path.append('../../')
 from utils import get_perc_first_correct, calc_ncdg
 from train_utils import remove_ranking, process_ranking, get_labels
 import click
@@ -12,9 +15,11 @@ import numpy as np
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def load_model():
+    print('loading model')
     model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", torch_dtype=torch.float16)
     tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
     model.to(DEVICE)
+    tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
 def load_test_data():
@@ -31,7 +36,7 @@ def perform_inference(df, model, tokenizer):
     results = []
     for i, row in tqdm(df.iterrows(), total=len(df)):
         # TODO: add error handling 
-        prompt, _ = remove_ranking(row.text)#(row.text.split('## Ranking: ')[0] + "## Ranking: ")
+        prompt, _ = remove_ranking(row.text)
         results.append(
             get_response(prompt, model, tokenizer) 
         )
